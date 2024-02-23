@@ -159,8 +159,7 @@ class EditProfileScreen extends StatelessWidget {
                 // Implement logic to update profile picture
               },
               style: ElevatedButton.styleFrom(
-                primary: Colors.black,
-                onPrimary: Colors.white,
+                foregroundColor: Colors.white, backgroundColor: Colors.black,
               ),
               child: Text('Change Picture'),
             ),
@@ -194,8 +193,7 @@ class EditProfileScreen extends StatelessWidget {
                   // Implement logic to update profile
                 },
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.black,
-                  onPrimary: Colors.white,
+                  foregroundColor: Colors.white, backgroundColor: Colors.black,
                 ),
                 child: Text('Update'),
               ),

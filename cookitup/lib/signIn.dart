@@ -1,3 +1,4 @@
+import 'package:cookitup/signUp.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,9 +20,10 @@ class SignInPage extends StatelessWidget {
       // Check if the user exists and the password matches
   if (userSnapshot.exists && (userSnapshot.data()! as Map<String, dynamic>)['password'] == password) {
     // Navigate to Home page if the user exists and the password matches
+    // ignore: use_build_context_synchronously
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => Home()),
+      MaterialPageRoute(builder: (context) => HomeScreen()),
     );
   } else {
     // Show error message if the user doesn't exist or the password doesn't match
@@ -132,7 +134,7 @@ class SignInPage extends StatelessWidget {
                 _signInWithEmailAndPassword(context);
               },
               style: ElevatedButton.styleFrom(
-                primary: Color(
+                backgroundColor: Color(
                     0xFF437D28), // Button background color changed to match provided color
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0), // Rounded corners

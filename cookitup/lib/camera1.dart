@@ -193,4 +193,3 @@ void runAppWithModel() async {
     home: MainScreen(),
   ));
 }
-

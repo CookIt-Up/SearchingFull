@@ -1,7 +1,5 @@
 
 import 'package:flutter/material.dart';
-import 'camera.dart';
-import 'package:flutter/services.dart';
 import 'profile.dart';
 import 'grocery.dart';
 import 'home.dart';

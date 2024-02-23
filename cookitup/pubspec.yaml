@@ -42,7 +42,9 @@ dependencies:
   tflite_flutter: ^0.10.4
   tflite: ^1.1.2
   image_picker: ^0.8.0
- 
+  video_player: ^2.8.2
+  chewie: ^1.7.5
+  firebase_storage: ^11.6.6
 
 dev_dependencies:
   flutter_test:
