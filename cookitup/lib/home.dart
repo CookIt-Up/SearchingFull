@@ -25,7 +25,7 @@ class Home extends StatelessWidget {
       home: HomeScreen(),
       // Define named routes
       routes: {
-        // '/': (context) => HomeScreen(),
+        '/home': (context) => HomeScreen(),
         '/userProfile': (context) => UserProfileScreen(),
         '/camera': (context) => CameraView(),
         '/groceryList': (context) => GroceryListApp(),
@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .get()
         .then((querySnapshot) {
       setState(() {
-        postDocumentsList = querySnapshot.docs;
+        postDocumentsList = querySnapshot.docs.toSet().toList();
       });
     }).catchError((error) {
       print("Error searching: $error");
@@ -165,12 +165,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
         bottomNavigationBar: BottomAppBar(
+          color: Color(0xFFD1E7D2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               IconButton(
                 onPressed: () {
-                  // Handle icon 1 pressed
+                  Navigator.pushNamed(context, '/home');
                 },
                 icon: Icon(Icons.home),
               ),
