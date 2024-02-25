@@ -26,7 +26,6 @@ class _HomeSearchState extends State<HomeSearch> {
   }
 
   Future<void> initSearchResult() async {
-  
     matchedDocumentIds.clear();
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
@@ -80,7 +79,15 @@ class _HomeSearchState extends State<HomeSearch> {
                               builder: (context, urlSnapshot) {
                                 if (urlSnapshot.connectionState ==
                                     ConnectionState.waiting) {
-                                  return CircularProgressIndicator();
+                                  return CircularProgressIndicator(
+                                    // Define the color of the CircularProgressIndicator
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        const Color.fromARGB(
+                                            255, 255, 255, 255)),
+
+                                    // Define the thickness of the CircularProgressIndicator
+                                    strokeWidth: 2.0,
+                                  );
                                 } else if (urlSnapshot.hasError) {
                                   return Text('Error: ${urlSnapshot.error}');
                                 } else {
@@ -123,7 +130,21 @@ class _HomeSearchState extends State<HomeSearch> {
                                                             .connectionState ==
                                                         ConnectionState
                                                             .waiting) {
-                                                      return CircularProgressIndicator();
+                                                      return CircularProgressIndicator(
+                                                        // Define the color of the CircularProgressIndicator
+                                                        valueColor:
+                                                            AlwaysStoppedAnimation<
+                                                                    Color>(
+                                                                const Color
+                                                                    .fromARGB(
+                                                                    255,
+                                                                    255,
+                                                                    255,
+                                                                    255)),
+
+                                                        // Define the thickness of the CircularProgressIndicator
+                                                        strokeWidth: 2.0,
+                                                      );
                                                     } else if (avatarUrlSnapshot
                                                         .hasError) {
                                                       return Text(
@@ -195,7 +216,14 @@ class _HomeSearchState extends State<HomeSearch> {
                 );
               } else {
                 return Center(
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(
+                    // Define the color of the CircularProgressIndicator
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        const Color.fromARGB(255, 255, 255, 255)),
+
+                    // Define the thickness of the CircularProgressIndicator
+                    strokeWidth: 2.0,
+                  ),
                   // Show a loading indicator while waiting for data
                 );
               }

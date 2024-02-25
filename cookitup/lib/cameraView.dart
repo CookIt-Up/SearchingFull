@@ -1,148 +1,231 @@
-// import 'package:camera/camera.dart';
-// import 'package:flutter/material.dart';
-// import 'package:tflite/tflite.dart';
+import 'dart:async';
 
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       theme: ThemeData.dark(),
-//       home: HomePage(),
-//     );
-//   }
-// }
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// class HomePage extends StatefulWidget {
-//   @override
-//   _HomePageState createState() => _HomePageState();
-// }
+class CameraSearch extends StatefulWidget {
+  final Set documentIds;
+  
+  CameraSearch({Key? key, required this.documentIds}) : super(key: key);
 
-// class _HomePageState extends State<HomePage> {
-//   late CameraController cameraController;
-//   late CameraImage cameraImage;
-//   late List recognitionsList;
+  @override
+  _CameraSearchState createState() => _CameraSearchState();
+}
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     initializeCamera();
-//     loadModel();
-//   }
+class _CameraSearchState extends State<CameraSearch> {
+  late StreamController<Set<String>> matchedDocumentIdsStreamController;
+  late Set<String> matchedDocumentIds;
 
-//   @override
-//   void dispose() {
-//     super.dispose();
-//     cameraController?.dispose();
-//     Tflite.close();
-//   }
+  @override
+  void initState() {
+     print("In initCameraSearchResult");
+    super.initState();
+    matchedDocumentIds = {};
+    matchedDocumentIdsStreamController = StreamController<Set<String>>();
+    initCameraSearchResult(); // Call initCameraSearchResult here
+  }
 
-//   Future<void> initializeCamera() async {
-//     WidgetsFlutterBinding.ensureInitialized();
-//     final cameras = await availableCameras();
-//     cameraController = CameraController(cameras[0], ResolutionPreset.medium);
-//     await cameraController.initialize();
-//     cameraController.startImageStream((CameraImage image) {
-//       setState(() {
-//         cameraImage = image;
-//         runModel();
-//       });
-//     });
-//   }
+  Future<void> initCameraSearchResult() async {
+    print("In initCameraSearchResult");
+    Map<String, int> idCountMap = {};
+    matchedDocumentIds.clear();
 
-//   Future<void> loadModel() async {
-//     Tflite.close();
-//     await Tflite.loadModel(
-//         model: "assets/ssd_mobilenet.tflite",
-//         labels: "assets/ssd_mobilenet.txt");
-//   }
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection("recipe")
+          .where(FieldPath.documentId, whereIn: widget.documentIds.toList())
+          .get();
 
-//   Future<void> runModel() async {
-//     if (cameraImage == null) return;
-//     final List<dynamic> results = await Tflite.detectObjectOnFrame(
-//       bytesList: cameraImage.planes.map((plane) => plane.bytes).toList(),
-//       imageHeight: cameraImage.height,
-//       imageWidth: cameraImage.width,
-//       imageMean: 127.5,
-//       imageStd: 127.5,
-//       numResultsPerClass: 1,
-//       threshold: 0.4,
-//     );
+      for (var doc in querySnapshot.docs) {
+        String docId = doc.id;
+        idCountMap[docId] = (idCountMap[docId] ?? 0) + 1;
+      }
 
-//     setState(() {
-//       recognitionsList = results;
-//     });
-//   }
+      // Sort the map by value in ascending order
+      List<String> sortedDocumentIds = idCountMap.keys.toList()
+        ..sort((a, b) => idCountMap[a]!.compareTo(idCountMap[b]!));
 
-//   List<Widget> displayBoxesAroundRecognizedObjects(Size screen) {
-//     if (recognitionsList == null) return [];
+      //convert to set
+      matchedDocumentIds = sortedDocumentIds.toSet();
 
-//     double factorX = screen.width;
-//     double factorY = screen.height;
+      // Emit the sorted list of document IDs to the stream
+      matchedDocumentIdsStreamController.add(matchedDocumentIds);
+    } catch (error) {
+      print("Error searching: $error");
+    }
+  }
 
-//     return recognitionsList.map<Widget>((result) {
-//       return Positioned(
-//         left: result["rect"]["x"] * factorX,
-//         top: result["rect"]["y"] * factorY,
-//         width: result["rect"]["w"] * factorX,
-//         height: result["rect"]["h"] * factorY,
-//         child: Container(
-//           decoration: BoxDecoration(
-//             borderRadius: BorderRadius.all(Radius.circular(10.0)),
-//             border: Border.all(color: Colors.pink, width: 2.0),
-//           ),
-//           child: Text(
-//             "${result['detectedClass']} ${(result['confidenceInClass'] * 100).toStringAsFixed(0)}%",
-//             style: TextStyle(
-//               backgroundColor: Colors.pink,
-//               color: Colors.black,
-//               fontSize: 18.0,
-//             ),
-//           ),
-//         ),
-//       );
-//     }).toList();
-//   }
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        backgroundColor: Color(0xFFD1E7D2),
+        body: SafeArea(
+          child: StreamBuilder<Set<String>>(
+            stream: matchedDocumentIdsStreamController.stream,
+            builder: (context, AsyncSnapshot<Set<String>> snapshot) {
+              if (snapshot.hasData) {
+                return ListView.separated(
+                  itemCount: snapshot.data!.length,
+                  itemBuilder: (context, index) {
+                    String documentId = snapshot.data!.toList()[index];
+                    return StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('recipe')
+                          .doc(documentId)
+                          .snapshots(),
+                      builder: (context,
+                          AsyncSnapshot<DocumentSnapshot> documentSnapshot) {
+                        if (documentSnapshot.hasData &&
+                            documentSnapshot.data!.exists) {
+                          var data = documentSnapshot.data!.data()
+                              as Map<String, dynamic>;
+                          String thumbnailUrl = data['thumbnail'];
 
-//   @override
-//   Widget build(BuildContext context) {
-//     Size size = MediaQuery.of(context).size;
-//     List<Widget> list = [];
+                          return SizedBox(
+                            width: 200,
+                            height: 250,
+                            child: FutureBuilder(
+                              future: getImageUrl(thumbnailUrl),
+                              builder: (context, urlSnapshot) {
+                                if (urlSnapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                } else if (urlSnapshot.hasError) {
+                                  return Text('Error: ${urlSnapshot.error}');
+                                } else {
+                                  var url = urlSnapshot.data as String;
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            image: DecorationImage(
+                                              image: NetworkImage(url),
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(height: 10),
+                                      StreamBuilder<DocumentSnapshot>(
+                                        stream: FirebaseFirestore.instance
+                                            .collection('users')
+                                            .doc(data['userid'])
+                                            .snapshots(),
+                                        builder: (context,
+                                            AsyncSnapshot<DocumentSnapshot>
+                                                userSnapshot) {
+                                          if (userSnapshot.hasData &&
+                                              userSnapshot.data!.exists) {
+                                            var userData = userSnapshot.data!
+                                                .data() as Map<String, dynamic>;
+                                            String dp = userData['profilepic'];
+                                            return Row(
+                                              children: [
+                                                FutureBuilder<String>(
+                                                  future: getImageUrl(dp),
+                                                  builder: (context,
+                                                      avatarUrlSnapshot) {
+                                                    if (avatarUrlSnapshot
+                                                            .connectionState ==
+                                                        ConnectionState
+                                                            .waiting) {
+                                                      return CircularProgressIndicator();
+                                                    } else if (avatarUrlSnapshot
+                                                        .hasError) {
+                                                      return Text(
+                                                          'Error: ${avatarUrlSnapshot.error}');
+                                                    } else {
+                                                      String avatarUrl =
+                                                          avatarUrlSnapshot
+                                                              .data!;
+                                                      // Use the avatarUrl to display the avatar image
+                                                      return CircleAvatar(
+                                                        backgroundImage:
+                                                            NetworkImage(
+                                                                avatarUrl),
+                                                        radius: 20,
+                                                      );
+                                                    }
+                                                  },
+                                                ),
+                                                SizedBox(width: 10),
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      data['title'],
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 20,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 5),
+                                                    Text(
+                                                      userData['name'],
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w200,
+                                                        fontSize: 10,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            );
+                                          } else {
+                                            print(
+                                                "User Snapshot Error: ${userSnapshot.error}");
+                                            return SizedBox(); // Placeholder when data is loading or not available
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        } else {
+                          return SizedBox(); // Placeholder when data is loading or not available
+                        }
+                      },
+                    );
+                  },
+                  separatorBuilder: (ctx, index) {
+                    return SizedBox(
+                      height: 20,
+                    );
+                  },
+                );
+              } else {
+                return Center(
+                  child: CircularProgressIndicator(),
+                  // Show a loading indicator while waiting for data
+                );
+              }
+            },
+          ),
+        ),
+      ),
+    );
+  }
 
-//     list.add(
-//       Positioned(
-//         top: 0.0,
-//         left: 0.0,
-//         width: size.width,
-//         height: size.height - 100,
-//         child: Container(
-//           height: size.height - 100,
-//           child: (!cameraController.value.isInitialized)
-//               ? Container()
-//               : AspectRatio(
-//                   aspectRatio: cameraController.value.aspectRatio,
-//                   child: CameraPreview(cameraController),
-//                 ),
-//         ),
-//       ),
-//     );
+  @override
+  void dispose() {
+    matchedDocumentIdsStreamController.close();
+    super.dispose();
+  }
 
-//     if (cameraImage != null) {
-//       list.addAll(displayBoxesAroundRecognizedObjects(size));
-//     }
-
-//     return SafeArea(
-//       child: Scaffold(
-//         backgroundColor: Colors.black,
-//         body: Container(
-//           margin: EdgeInsets.only(top: 50),
-//           color: Colors.black,
-//           child: Stack(
-//             children: list,
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// void main() => runApp(MyApp());
+  Future<String> getImageUrl(String imageName) async {
+    final ref = FirebaseStorage.instance.ref().child(imageName);
+    final url = await ref.getDownloadURL();
+    return url;
+  }
+}

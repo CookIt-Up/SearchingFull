@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:cookitup/profile.dart';
-//import 'package:cookitup/cameraView.dart';
+import 'package:cookitup/signUp.dart';
+import 'package:cookitup/camera1.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';

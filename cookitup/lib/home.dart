@@ -3,7 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cookitup/camera.dart';
+import 'package:cookitup/camera1.dart';
 import 'package:flutter/material.dart';
 import 'profile.dart';
 import 'grocery.dart';
@@ -25,9 +25,9 @@ class Home extends StatelessWidget {
       home: HomeScreen(),
       // Define named routes
       routes: {
-        '/home': (context) => HomeScreen(),
+        // '/home': (context) => HomeScreen(),
         '/userProfile': (context) => UserProfileScreen(),
-        '/camera': (context) => CameraView(),
+        '/camera': (context) => CameraScreen(),
         '/groceryList': (context) => GroceryListApp(),
         '/filter': (context) => FilterPage(),
         '/chatbot': (context) => ChatbotApp(),
@@ -35,8 +35,10 @@ class Home extends StatelessWidget {
     );
   }
 }
+
 TextEditingController textFieldController = TextEditingController();
-String searchTitle='';
+String searchTitle = '';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -46,8 +48,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool showHomeSearch = false;
-  
-  
+
   String recipe = "";
   List<DocumentSnapshot>? postDocumentsList;
 
@@ -67,8 +68,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 '\uf8ff') // '\uf8ff' is a high surrogate character that enables the range query
         .get()
         .then((querySnapshot) {
+      List<DocumentSnapshot> filteredDocuments = [];
+      Set<String> uniqueTitles = Set(); // Set to store unique titles
+
+      querySnapshot.docs.forEach((doc) {
+        var title = doc['title'];
+        if (!uniqueTitles.contains(title)) {
+          uniqueTitles
+              .add(title); // Add title to set if it's not already present
+          filteredDocuments.add(doc); // Add document to filtered list
+        }
+      });
+
       setState(() {
-        postDocumentsList = querySnapshot.docs.toSet().toList();
+        postDocumentsList = filteredDocuments;
       });
     }).catchError((error) {
       print("Error searching: $error");
@@ -89,7 +102,11 @@ class _HomeScreenState extends State<HomeScreen> {
               IconButton(
                 onPressed: () {
                   // Navigate to UserProfileScreen using named route
-                  Navigator.pushNamed(context, '/userProfile');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => UserProfileScreen()),
+                  );
                 },
                 icon: Icon(
                   Icons.account_circle,
@@ -121,7 +138,11 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               onPressed: () {
                 // Navigate to CameraView using named route
-                Navigator.pushNamed(context, '/camera');
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CameraScreen()),
+                );
               },
               icon: Icon(Icons.camera_alt),
             ),
@@ -171,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               IconButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/home');
+                  //  Navigator.pushNamed(context, '/home');
                 },
                 icon: Icon(Icons.home),
               ),
@@ -236,13 +257,20 @@ class MainScreen extends StatelessWidget {
 
                     // Assuming 'thumbnail' field contains the path or name of the image in Firebase Storage
                     var thumbnailPath = document['thumbnail'];
-                    print('Image Path $thumbnailPath');
+
                     return FutureBuilder(
                       future: getImageUrl(thumbnailPath),
                       builder: (context, urlSnapshot) {
                         if (urlSnapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return CircularProgressIndicator();
+                          return CircularProgressIndicator(
+                            // Define the color of the CircularProgressIndicator
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(const Color.fromARGB(255, 255, 255, 255)),
+
+                            // Define the thickness of the CircularProgressIndicator
+                            strokeWidth: 2.0,
+                          );
                         } else if (urlSnapshot.hasError) {
                           return Text('Error: ${urlSnapshot.error}');
                         } else {
